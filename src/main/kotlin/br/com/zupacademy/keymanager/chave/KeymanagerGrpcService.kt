@@ -2,7 +2,7 @@ package br.com.zupacademy.keymanager.chave
 
 import br.com.zupacademy.keymanager.CadastroChaveRequest
 import br.com.zupacademy.keymanager.CadastroChaveResponse
-import br.com.zupacademy.keymanager.KeymanagerServiceGrpc
+import br.com.zupacademy.keymanager.KeymanagerCadastraServiceGrpc
 import br.com.zupacademy.keymanager.TipoChave
 import br.com.zupacademy.keymanager.clients.ERPClient
 import br.com.zupacademy.keymanager.model.Chave
@@ -10,23 +10,20 @@ import br.com.zupacademy.keymanager.repository.ChaveRepository
 import br.com.zupacademy.keymanager.validator.CadastraChaveRequestValidator
 import io.grpc.Status
 import io.grpc.StatusRuntimeException
-import io.grpc.protobuf.StatusProto
 import io.grpc.stub.StreamObserver
-import io.micronaut.http.HttpStatus
-import io.micronaut.http.exceptions.HttpStatusException
 import java.util.*
 import javax.inject.Singleton
 
 @Singleton
 class KeymanagerGrpcService(private val erpClient: ERPClient, private val chaveRepository: ChaveRepository) :
-    KeymanagerServiceGrpc.KeymanagerServiceImplBase() {
+    KeymanagerCadastraServiceGrpc.KeymanagerCadastraServiceImplBase() {
 
     override fun cadastraChave(
         request: CadastroChaveRequest?,
         responseObserver: StreamObserver<CadastroChaveResponse>?
     ) {
 
-        if (request != null) {
+        if (request!!.allFields.isNotEmpty()) {
 
             val cadastraChaveRequestValidator = CadastraChaveRequestValidator(chaveRepository)
 
@@ -35,9 +32,8 @@ class KeymanagerGrpcService(private val erpClient: ERPClient, private val chaveR
             } catch (e: StatusRuntimeException) {
                 responseObserver?.onError(e)
                 responseObserver!!.onCompleted()
-
+                return
             }
-
 
             val response = erpClient.consultaConta(request.id, request.tipoConta.name)
             if (response.status().code == 404) {
@@ -47,43 +43,6 @@ class KeymanagerGrpcService(private val erpClient: ERPClient, private val chaveR
                         .asRuntimeException()
                 )
                 return
-            }
-
-
-            if (request.tipoChave == TipoChave.CPF) {
-                val chave = request.toModel()
-                chaveRepository.save(chave)
-
-                responseObserver!!.onNext(
-                    CadastroChaveResponse.newBuilder()
-                        .setPixId(chave.chavePix)
-                        .build()
-                )
-                responseObserver.onCompleted()
-            }
-
-            if (request.tipoChave == TipoChave.EMAIL) {
-                val chave = request.toModel()
-                chaveRepository.save(chave)
-
-                responseObserver!!.onNext(
-                    CadastroChaveResponse.newBuilder()
-                        .setPixId(chave.chavePix)
-                        .build()
-                )
-                responseObserver.onCompleted()
-            }
-
-            if (request.tipoChave == TipoChave.TELEFONE) {
-                val chave = request.toModel();
-                chaveRepository.save(chave)
-
-                responseObserver!!.onNext(
-                    CadastroChaveResponse.newBuilder()
-                        .setPixId(chave.chavePix)
-                        .build()
-                )
-                responseObserver.onCompleted()
             }
 
             if (request.tipoChave == TipoChave.ALEATORIA) {
@@ -96,7 +55,19 @@ class KeymanagerGrpcService(private val erpClient: ERPClient, private val chaveR
                         .build()
                 )
                 responseObserver.onCompleted()
+                return
             }
+
+            val chave = request.toModel()
+            chaveRepository.save(chave)
+
+            responseObserver!!.onNext(
+                CadastroChaveResponse.newBuilder()
+                    .setPixId(chave.chavePix)
+                    .build()
+            )
+            responseObserver.onCompleted()
+            return
 
         } else {
             responseObserver?.onError(

@@ -7,12 +7,17 @@ option objc_class_prefix = "HLW";
 
 package br.com.zupacademy.keymanager;
 
-service KeymanagerService {
+service KeymanagerCadastraService {
   rpc cadastraChave (CadastroChaveRequest) returns (CadastroChaveResponse) {}
 }
 
+service KeymanagerRemoveService {
+  rpc removeChave (RemoveRequest) returns (RemoveResponse) {}
+}
+
+
 enum TipoChave {
-  UNKNOWN = 0;
+  CHAVE_DESCONHECIDA = 0;
   CPF = 1;
   TELEFONE = 2;
   EMAIL = 3;
@@ -20,8 +25,9 @@ enum TipoChave {
 }
 
 enum TipoConta {
-  CONTA_CORRENTE = 0;
-  CONTA_POUPANCA = 1;
+  CONTA_DESCONHECIDA = 0;
+  CONTA_CORRENTE = 1;
+  CONTA_POUPANCA = 2;
 }
 
 message CadastroChaveRequest {
@@ -33,4 +39,14 @@ message CadastroChaveRequest {
 
 message CadastroChaveResponse {
   string pixId = 1;
+  string clienteId = 2;
+}
+
+message RemoveRequest {
+  string pixId = 1;
+  string clienteId = 2;
+}
+
+message RemoveResponse {
+  bool removido = 1;
 }

@@ -1,9 +1,7 @@
 package br.com.zupacademy.keymanager.keymanagerGrpcService
 
-import br.com.zupacademy.keymanager.CadastroChaveRequest
-import br.com.zupacademy.keymanager.KeymanagerServiceGrpc
-import br.com.zupacademy.keymanager.TipoChave
-import br.com.zupacademy.keymanager.TipoConta
+import br.com.zupacademy.keymanager.*
+import br.com.zupacademy.keymanager.clients.ConsultaResponse
 import br.com.zupacademy.keymanager.clients.ERPClient
 import br.com.zupacademy.keymanager.model.Chave
 import br.com.zupacademy.keymanager.repository.ChaveRepository
@@ -19,13 +17,14 @@ import io.micronaut.test.extensions.junit5.annotation.MicronautTest
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @MicronautTest(transactional = false)
 internal class CadastroChaveTest(
-    val gRpcClient: KeymanagerServiceGrpc.KeymanagerServiceBlockingStub
+    private val gRpcCadastraClient: KeymanagerCadastraServiceGrpc.KeymanagerCadastraServiceBlockingStub
 ) {
 
     @Inject
@@ -41,11 +40,14 @@ internal class CadastroChaveTest(
         val client: ERPClient = Mockito.mock(ERPClient::class.java)
 
         Mockito.`when`(client.consultaConta("c56dfef4-7901-44fb-84e2-a2cefb157890", "CONTA_CORRENTE"))
-            .thenReturn(HttpResponse.ok())
+            .thenReturn(HttpResponse.ok(ConsultaResponse("CONTA_CORRENTE", "0001", "291900")))
 
         val response = client.consultaConta("c56dfef4-7901-44fb-84e2-a2cefb157890", "CONTA_CORRENTE")
 
         assertEquals(HttpStatus.OK, response.status)
+        assertEquals("CONTA_CORRENTE", response.body().tipo)
+        assertEquals("0001", response.body().agencia)
+        assertEquals("291900", response.body().numero)
     }
 
     @Test
@@ -65,7 +67,7 @@ internal class CadastroChaveTest(
         //cenário
 
         //ação
-        val response = gRpcClient.cadastraChave(
+        val response = gRpcCadastraClient.cadastraChave(
             CadastroChaveRequest.newBuilder()
                 .setId("c56dfef4-7901-44fb-84e2-a2cefb157890")
                 .setTipoChave(TipoChave.CPF)
@@ -74,10 +76,13 @@ internal class CadastroChaveTest(
                 .build()
         )
 
+        val chaveEncontrada = chaveRepository.findAll()
+
         //validação
         assertNotNull(response.pixId)
         assertEquals("12547896587", response.pixId)
         assertTrue(chaveRepository.existsByChavePix("12547896587"))
+        assertEquals(TipoConta.CONTA_CORRENTE, chaveEncontrada.get(0).tipoConta)
     }
 
     @Test
@@ -87,8 +92,8 @@ internal class CadastroChaveTest(
         chaveRepository.save(Chave("12547896587", "c56dfef4-7901-44fb-84e2-a2cefb157890", TipoConta.CONTA_CORRENTE))
 
         //ação
-        val error = org.junit.jupiter.api.assertThrows<StatusRuntimeException> {
-            gRpcClient.cadastraChave(
+        val error = assertThrows<StatusRuntimeException> {
+            gRpcCadastraClient.cadastraChave(
                 CadastroChaveRequest.newBuilder()
                     .setId("c56dfef4-7901-44fb-84e2-a2cefb157890")
                     .setTipoChave(TipoChave.CPF)
@@ -108,8 +113,8 @@ internal class CadastroChaveTest(
 
     @Test
     internal fun `deve retornar INVALID_ARGUMENT ao tentar cadastrar uma chave de formato invalido`() {
-        val error = org.junit.jupiter.api.assertThrows<StatusRuntimeException> {
-            gRpcClient.cadastraChave(
+        val error = assertThrows<StatusRuntimeException> {
+            gRpcCadastraClient.cadastraChave(
                 CadastroChaveRequest.newBuilder()
                     .setId("c56dfef4-7901-44fb-84e2-a2cefb157890")
                     .setTipoChave(TipoChave.EMAIL)
@@ -128,7 +133,7 @@ internal class CadastroChaveTest(
 
     @Test
     internal fun `deve cadastrar chave aleatoria`() {
-        gRpcClient.cadastraChave(
+        gRpcCadastraClient.cadastraChave(
             CadastroChaveRequest.newBuilder()
                 .setId("c56dfef4-7901-44fb-84e2-a2cefb157890")
                 .setTipoChave(TipoChave.ALEATORIA)
@@ -146,8 +151,8 @@ internal class CadastroChaveTest(
 
     @Test
     internal fun `deve retornar INVALID_ARGUMENT quando tentar cadastrar chave com mais de 77 caracteres`() {
-        val error = org.junit.jupiter.api.assertThrows<StatusRuntimeException> {
-            gRpcClient.cadastraChave(
+        val error = assertThrows<StatusRuntimeException> {
+            gRpcCadastraClient.cadastraChave(
                 CadastroChaveRequest.newBuilder()
                     .setId("c56dfef4-7901-44fb-84e2-a2cefb157890")
                     .setTipoChave(TipoChave.EMAIL)
@@ -167,7 +172,7 @@ internal class CadastroChaveTest(
     @Test
     internal fun `deve cadastrar chave com exatamente 77 caracteres`() {
 
-        gRpcClient.cadastraChave(
+        gRpcCadastraClient.cadastraChave(
             CadastroChaveRequest.newBuilder()
                 .setId("c56dfef4-7901-44fb-84e2-a2cefb157890")
                 .setTipoChave(TipoChave.EMAIL)
@@ -179,11 +184,126 @@ internal class CadastroChaveTest(
         assertTrue(chaveRepository.existsByChavePix("gustavo@gmail.co" + "m".repeat(61)))
     }
 
+    @Test
+    internal fun `deve cadastrar telefone como chave valida`() {
+
+        gRpcCadastraClient.cadastraChave(
+            CadastroChaveRequest.newBuilder()
+                .setId("c56dfef4-7901-44fb-84e2-a2cefb157890")
+                .setTipoChave(TipoChave.EMAIL)
+                .setValorTipo("gustavo@gmail.co" + "m".repeat(61))
+                .setTipoConta(TipoConta.CONTA_CORRENTE)
+                .build()
+        )
+
+        assertTrue(chaveRepository.existsByChavePix("gustavo@gmail.co" + "m".repeat(61)))
+    }
+
+    @Test
+    internal fun `deve retornar INVALID_ARGUMENT ao enviar uma requisicao sem tipo da chave`() {
+
+        val error = assertThrows<StatusRuntimeException> {
+            gRpcCadastraClient.cadastraChave(
+                CadastroChaveRequest.newBuilder()
+                    .setId("c56dfef4-7901-44fb-84e2-a2cefb157890")
+                    .setValorTipo("gustavo@gmail.com")
+                    .setTipoConta(TipoConta.CONTA_CORRENTE)
+                    .build()
+            )
+        }
+
+        with(error) {
+            assertEquals(Status.INVALID_ARGUMENT.code, status.code)
+            assertEquals("O tipo da chave deve ser informado.", status.description)
+        }
+
+    }
+
+    @Test
+    internal fun `deve retornar INVALID_ARGUMENT ao enviar uma requisicao sem tipo da conta`() {
+
+        val error = assertThrows<StatusRuntimeException> {
+            gRpcCadastraClient.cadastraChave(
+                CadastroChaveRequest.newBuilder()
+                    .setId("c56dfef4-7901-44fb-84e2-a2cefb157890")
+                    .setTipoChave(TipoChave.EMAIL)
+                    .setValorTipo("gustavo@gmail.com")
+                    .build()
+            )
+        }
+
+        with(error) {
+            assertEquals(Status.INVALID_ARGUMENT.code, status.code)
+            assertEquals("O tipo da conta deve ser informado.", status.description)
+        }
+
+    }
+
+    @Test
+    internal fun `deve retornar INVALID_ARGUMENT ao enviar uma requisicao nula`() {
+
+        val error = assertThrows<StatusRuntimeException> {
+            gRpcCadastraClient.cadastraChave(
+                null
+            )
+        }
+
+        with(error) {
+            assertEquals(Status.INVALID_ARGUMENT.code, status.code)
+            assertEquals("A requisição deve ser preenchida.", status.description)
+        }
+
+    }
+
+    @Test
+    internal fun `deve retornar INVALID_ARGUMENT ao enviar uma requisicao com cpf invalido`() {
+
+        val error = assertThrows<StatusRuntimeException> {
+            gRpcCadastraClient.cadastraChave(
+                CadastroChaveRequest.newBuilder()
+                    .setId("c56dfef4-7901-44fb-84e2-a2cefb157890")
+                    .setTipoChave(TipoChave.CPF)
+                    .setValorTipo("154268574587")
+                    .setTipoConta(TipoConta.CONTA_CORRENTE)
+                    .build()
+            )
+        }
+
+        with(error) {
+            assertEquals(Status.INVALID_ARGUMENT.code, status.code)
+            assertEquals("CPF em branco ou inválido.\n" +
+                    "Formato esperado 111.222.333-44", status.description)
+        }
+
+    }
+
+    @Test
+    internal fun `deve retornar INVALID_ARGUMENT ao enviar uma requisicao com telefone invalido`() {
+
+        val error = assertThrows<StatusRuntimeException> {
+            gRpcCadastraClient.cadastraChave(
+                CadastroChaveRequest.newBuilder()
+                    .setId("c56dfef4-7901-44fb-84e2-a2cefb157890")
+                    .setTipoChave(TipoChave.TELEFONE)
+                    .setValorTipo("55665874585")
+                    .setTipoConta(TipoConta.CONTA_CORRENTE)
+                    .build()
+            )
+        }
+
+        with(error) {
+            assertEquals(Status.INVALID_ARGUMENT.code, status.code)
+            assertEquals("Telefone em branco ou inválido.\n" +
+                    "Formato esperado +5585988714077", status.description)
+        }
+
+    }
+
     @Factory
-    class Clients {
+    class CadastroClients {
         @Singleton
-        fun blockingStub(@GrpcChannel(GrpcServerChannel.NAME) channel: ManagedChannel): KeymanagerServiceGrpc.KeymanagerServiceBlockingStub {
-            return KeymanagerServiceGrpc.newBlockingStub(channel)
+        fun blockingStub(@GrpcChannel(GrpcServerChannel.NAME) channel: ManagedChannel): KeymanagerCadastraServiceGrpc.KeymanagerCadastraServiceBlockingStub {
+            return KeymanagerCadastraServiceGrpc.newBlockingStub(channel)
         }
     }
 }

@@ -2,6 +2,7 @@ package br.com.zupacademy.keymanager.validator
 
 import br.com.zupacademy.keymanager.CadastroChaveRequest
 import br.com.zupacademy.keymanager.TipoChave
+import br.com.zupacademy.keymanager.TipoConta
 import br.com.zupacademy.keymanager.repository.ChaveRepository
 import io.grpc.Status
 import io.grpc.StatusRuntimeException
@@ -9,17 +10,16 @@ import io.grpc.StatusRuntimeException
 class CadastraChaveRequestValidator(private val chaveRepository: ChaveRepository) {
 
     fun validaRequest(request: CadastroChaveRequest) {
-        if (request.tipoChave == null || request.tipoChave.name.isBlank()) {
+        if (request.tipoChave == TipoChave.CHAVE_DESCONHECIDA) {
             throw Status.INVALID_ARGUMENT
                 .withDescription("O tipo da chave deve ser informado.")
                 .asRuntimeException()
         }
 
-        if (request.tipoConta == null || request.tipoConta.name.isBlank()) {
+        if (request.tipoConta == TipoConta.CONTA_DESCONHECIDA) {
             throw Status.INVALID_ARGUMENT
                 .withDescription("O tipo da conta deve ser informado.")
                 .asRuntimeException()
-
         }
 
         if (request.valorTipo.length > 77) {
@@ -32,7 +32,7 @@ class CadastraChaveRequestValidator(private val chaveRepository: ChaveRepository
         if (request.tipoChave == TipoChave.CPF && !(request.valorTipo.matches("^[0-9]{11}$".toRegex()))) {
             throw Status.INVALID_ARGUMENT
                 .withDescription("CPF em branco ou inválido.")
-                .augmentDescription("Formado esperado 111.222.333-44")
+                .augmentDescription("Formato esperado 111.222.333-44")
                 .asRuntimeException()
 
         }
