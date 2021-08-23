@@ -8,13 +8,29 @@ option objc_class_prefix = "HLW";
 package br.com.zupacademy.keymanager;
 
 service KeymanagerService {
-  rpc send (KeymanagerRequest) returns (KeymanagerReply) {}
+  rpc cadastraChave (CadastroChaveRequest) returns (CadastroChaveResponse) {}
 }
 
-message KeymanagerRequest {
-  string name = 1;
+enum TipoChave {
+  UNKNOWN = 0;
+  CPF = 1;
+  TELEFONE = 2;
+  EMAIL = 3;
+  ALEATORIA = 4;
 }
 
-message KeymanagerReply {
-  string message = 1;
+enum TipoConta {
+  CONTA_CORRENTE = 0;
+  CONTA_POUPANCA = 1;
+}
+
+message CadastroChaveRequest {
+  string id = 1;
+  TipoChave tipoChave = 2;
+  string valorTipo = 3;
+  TipoConta tipoConta = 4;
+}
+
+message CadastroChaveResponse {
+  string pixId = 1;
 }

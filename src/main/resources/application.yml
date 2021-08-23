@@ -1,3 +1,21 @@
 micronaut:
   application:
     name: keymanager
+
+datasources:
+  default:
+    url: jdbc:mysql://localhost:3507/keymanager?createDatabaseIfNotExist=true
+    driverClassName: com.mysql.cj.jdbc.Driver
+    username: root
+    password: password1
+    dialect: MySQL5InnoDBDialect
+
+jpa:
+  default:
+    properties:
+      hibernate:
+        hbm2ddl:
+          auto: create
+      show_sql: true
+
+contas.url: http://localhost:9091/api/v1

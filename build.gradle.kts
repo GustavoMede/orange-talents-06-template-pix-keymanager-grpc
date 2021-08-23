@@ -6,6 +6,11 @@ plugins {
     id("io.micronaut.application") version "1.5.4"
     id("org.jetbrains.kotlin.plugin.allopen") version "1.4.32"
     id("com.google.protobuf") version "0.8.15"
+    id("org.jetbrains.kotlin.plugin.noarg") version "1.5.21"
+}
+
+noArg {
+    annotation("javax.persistence.Entity")
 }
 
 version = "0.1"
@@ -27,6 +32,7 @@ micronaut {
 dependencies {
     implementation("io.micronaut:micronaut-runtime")
     implementation("io.micronaut.grpc:micronaut-grpc-runtime")
+    implementation("io.micronaut:micronaut-http-client")
     implementation("io.micronaut.kotlin:micronaut-kotlin-runtime")
     implementation("javax.annotation:javax.annotation-api")
     implementation("org.jetbrains.kotlin:kotlin-reflect:${kotlinVersion}")
@@ -34,9 +40,22 @@ dependencies {
     runtimeOnly("ch.qos.logback:logback-classic")
     implementation("io.micronaut:micronaut-validation")
 
+
     runtimeOnly("com.fasterxml.jackson.module:jackson-module-kotlin")
 
     testImplementation("io.micronaut:micronaut-http-client")
+
+    //JPA
+    implementation("io.micronaut.sql:micronaut-hibernate-jpa")
+    implementation("io.micronaut.sql:micronaut-jdbc-hikari")
+    implementation("mysql:mysql-connector-java:8.0.21")
+    implementation("io.micronaut.data:micronaut-data-hibernate-jpa")
+
+    //TEST
+    testImplementation("com.h2database:h2")
+    testCompile("org.mockito:mockito-core:3.8.0")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.7.2")
+    testImplementation("io.micronaut.test:micronaut-test-junit5:2.3.2")
 
 }
 
@@ -77,7 +96,7 @@ protobuf {
     }
     plugins {
         id("grpc") {
-            artifact = "io.grpc:protoc-gen-grpc-java:1.38.0"
+            artifact = "io.grpc:protoc-gen-grpc-java:1.36.2"
         }
     }
     generateProtoTasks {
