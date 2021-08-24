@@ -18,4 +18,5 @@ jpa:
           auto: create
       show_sql: true
 
-contas.url: http://localhost:9091/api/v1
+itau.url: http://localhost:9091/api/v1
+bcb.url: http://localhost:8082/api/v1/pix/keys

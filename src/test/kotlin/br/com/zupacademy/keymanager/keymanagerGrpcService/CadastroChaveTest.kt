@@ -1,7 +1,7 @@
 package br.com.zupacademy.keymanager.keymanagerGrpcService
 
 import br.com.zupacademy.keymanager.*
-import br.com.zupacademy.keymanager.clients.ConsultaResponse
+import br.com.zupacademy.keymanager.clients.dto.ITAUResponse
 import br.com.zupacademy.keymanager.clients.ERPClient
 import br.com.zupacademy.keymanager.model.Chave
 import br.com.zupacademy.keymanager.repository.ChaveRepository
@@ -40,7 +40,7 @@ internal class CadastroChaveTest(
         val client: ERPClient = Mockito.mock(ERPClient::class.java)
 
         Mockito.`when`(client.consultaConta("c56dfef4-7901-44fb-84e2-a2cefb157890", "CONTA_CORRENTE"))
-            .thenReturn(HttpResponse.ok(ConsultaResponse("CONTA_CORRENTE", "0001", "291900")))
+            .thenReturn(HttpResponse.ok(ITAUResponse("CONTA_CORRENTE", "0001", "291900")))
 
         val response = client.consultaConta("c56dfef4-7901-44fb-84e2-a2cefb157890", "CONTA_CORRENTE")
 

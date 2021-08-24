@@ -30,11 +30,18 @@ enum TipoConta {
   CONTA_POUPANCA = 2;
 }
 
+enum TipoCliente {
+  TIPO_DESCONHECIDO = 0;
+  PESSOA_FISICA = 1;
+  PESSOA_JURIDICA = 2;
+}
+
 message CadastroChaveRequest {
   string id = 1;
   TipoChave tipoChave = 2;
   string valorTipo = 3;
   TipoConta tipoConta = 4;
+  TipoCliente tipoCliente = 5;
 }
 
 message CadastroChaveResponse {
@@ -43,8 +50,9 @@ message CadastroChaveResponse {
 }
 
 message RemoveRequest {
-  string pixId = 1;
-  string clienteId = 2;
+  string key = 1;
+  string participant = 2;
+  string clientId = 3;
 }
 
 message RemoveResponse {
